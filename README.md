@@ -7,8 +7,8 @@
 ## Table of contents
 - [Overview](#overview)
 - [Architecture & technologies](#architecture--technologies)
-- [Design decision — Why market order type](#design-decision---why-market-order-type)
-- [Workflow / Process flow](#workflow--process-flow)
+- [Design decision - Why market order type](#design-decision---why-market-order-type)
+- [Workflow / Process flow](#workflow--process-flow-detailed)
 - [Project files and responsibilities](#project-files-and-responsibilities)
 - [Database schema (order history)](#database-schema-order-history)
 - [Solana explorer links (pools)](#solana-explorer-links-pools)
@@ -27,13 +27,13 @@ The project is intentionally scoped as a server-side proof-of-concept and avoids
 
 ## Architecture & technologies
 **Core components**
-- Fastify — HTTP server and WebSocket endpoint (`src/server.ts`, `@fastify/websocket`).
-- BullMQ + Redis (Upstash recommended) — job queue & worker processing concurrency and retry/backoff logic.
-- PostgreSQL — persistent order history and audit log.
-- Solana (Devnet) — on-chain execution using:
-  - Meteora dynamic AMM SDK (`@meteora-ag/dynamic-amm-sdk`) — Meteora pool interactions and quotes.
-  - Raydium SDK v2 (`@raydium-io/raydium-sdk-v2`) — CPMM pool swaps and quotes.
-- `@solana/spl-token` & `@solana/web3.js` — token and transaction helpers.
+- Fastify - HTTP server and WebSocket endpoint (`src/server.ts`, `@fastify/websocket`).
+- BullMQ + Redis (Upstash recommended) - job queue & worker processing concurrency and retry/backoff logic.
+- PostgreSQL - persistent order history and audit log.
+- Solana (Devnet) - on-chain execution using:
+  - Meteora dynamic AMM SDK (`@meteora-ag/dynamic-amm-sdk`) - Meteora pool interactions and quotes.
+  - Raydium SDK v2 (`@raydium-io/raydium-sdk-v2`) - CPMM pool swaps and quotes.
+- `@solana/spl-token` & `@solana/web3.js` - token and transaction helpers.
 - TypeScript with ESM (`moduleResolution: NodeNext`) for the codebase.
 
 **High-level diagram**
@@ -44,12 +44,12 @@ Client -> Fastify POST /api/orders/execute -> DB (insert pending) -> enqueue job
 
 ---
 
-## Design decision — Why market order type
+## Design decision - Why market order type
 **Reasons to choose market orders for the POC**:
-1. **Simplicity & scope** — market orders allow focusing on routing logic, swaps, retry/backoff, and real-time UX instead of building an order book or matching engine.
-2. **AMM fit** — AMMs (Meteora, Raydium) function naturally with market-style swaps (you provide input and receive the best available output). Limit orders would require additional on-chain/off-chain mechanisms (e.g., keepers, time-in-force) which are beyond the assignment scope.
-3. **Deterministic verification** — executed price and tx hash are produced immediately and can be verified on explorer; routing decisions can be benchmarked.
-4. **Deliverable alignment** — the assignment expects a single order type and explicit lifecycle events; market order maps clearly to the lifecycle.
+1. **Simplicity & scope** - market orders allow focusing on routing logic, swaps, retry/backoff, and real-time UX instead of building an order book or matching engine.
+2. **AMM fit** - AMMs (Meteora, Raydium) function naturally with market-style swaps (you provide input and receive the best available output). Limit orders would require additional on-chain/off-chain mechanisms (e.g., keepers, time-in-force) which are beyond the assignment scope.
+3. **Deterministic verification** - executed price and tx hash are produced immediately and can be verified on explorer; routing decisions can be benchmarked.
+4. **Deliverable alignment** - the assignment expects a single order type and explicit lifecycle events; market order maps clearly to the lifecycle.
 
 ---
 
@@ -104,12 +104,12 @@ solana-order-engine/
 ```
 
 **Key responsibilities**
-- `server.ts` — endpoint: `POST /api/orders/execute`, returns `orderId` and WS info; serves the `/ws` endpoint.
-- `worker.ts` — consumes BullMQ jobs; orchestrates routing -> execution -> DB updates -> emits lifecycle events.
-- `dexRouter.ts` — contains `getQuotes()` and `executeSwap()` implementations for Meteora and Raydium.
-- `db.ts` — wrappers for `insertOrder`, `updateOrderStatus`, `setRoutingInfo`, etc.
-- `solanaHelpers.ts` — contains `wrapSOLAndGetCleanup()` to handle native SOL flows and ATA management.
-- `wsManager.ts` — tracks connected websocket clients, authenticates them via `wsToken` (HMAC), and forwards pub/sub messages.
+- `server.ts` - endpoint: `POST /api/orders/execute`, returns `orderId` and WS info; serves the `/ws` endpoint.
+- `worker.ts` - consumes BullMQ jobs; orchestrates routing -> execution -> DB updates -> emits lifecycle events.
+- `dexRouter.ts` - contains `getQuotes()` and `executeSwap()` implementations for Meteora and Raydium.
+- `db.ts` - wrappers for `insertOrder`, `updateOrderStatus`, `setRoutingInfo`, etc.
+- `solanaHelpers.ts` - contains `wrapSOLAndGetCleanup()` to handle native SOL flows and ATA management.
+- `wsManager.ts` - tracks connected websocket clients, authenticates them via `wsToken` (HMAC), and forwards pub/sub messages.
 
 ---
 
@@ -162,8 +162,84 @@ CREATE INDEX IF NOT EXISTS idx_orders_status_created_at ON "order-engine".orders
 - Node.js v18+ (recommended)
 - npm
 - PostgreSQL (or a hosted Postgres like Supabase)
-- Redis (Upstash recommended) — provide `REDIS_URL` accordingly
-- Solana CLI / keypair to create tokens & pools (optional, scripts provided)
+- Redis (Upstash recommended) - provide `REDIS_URL` accordingly
+- Solana CLI / keypair to create tokens & pools
+
+### Solana CLI Setup (Devnet)
+
+To run scripts for creating tokens, pools, and signing transactions, you must install the **Solana CLI**, create a **Devnet keypair**, and fund it with SOL.
+
+---
+
+#### 1. Install Solana CLI
+Follow the official doc: `https://solana.com/docs/intro/installation`
+
+Verify installation:
+
+```bash
+solana --version
+```
+---
+
+#### 2. Configure CLI to Devnet
+```bash
+solana config set --url https://api.devnet.solana.com
+```
+Check config:
+```bash
+solana config get
+```
+---
+
+#### 3. Create a Devnet Keypair
+Generate a new keypair:
+```bash
+solana-keygen new --outfile ~/solana-devnet-keypair.json
+```
+Show public key:
+```bash
+solana-keygen pubkey ~/solana-devnet-keypair.json
+```
+Set this wallet as default:
+```bash
+solana config set --keypair ~/solana-devnet-keypair.json
+```
+---
+
+#### 4. Airdrop SOL (Devnet)
+
+Your wallet needs SOL to pay for fees when creating tokens, ATAs, pools, or sending swaps.
+
+##### **Method A — CLI airdrop**
+
+```bash
+solana airdrop 2
+solana balance
+```
+> Note: Devnet rate-limits sometimes; retry if needed.
+
+##### **Method B — Solana Faucet**
+
+Use the official faucet: `https://faucet.solana.com`
+
+1. Paste your wallet address  
+2. Select **Devnet**  
+3. Request airdrop  
+4. Verify balance:
+
+```bash
+solana balance
+```
+---
+
+#### 5. Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `Airdrop failed` | Try multiple times or use faucet |
+| RPC rate-limit | Wait a few seconds and retry |
+| Wrong network | `solana config set --url devnet` |
+| Keypair permission denied | `chmod 600 ~/solana-devnet-keypair.json` |
 
 ### Environment
 Create a `.env` from `.env.example` and populate values:
@@ -190,7 +266,7 @@ npm install
 
 ### Apply DB migration
 ```bash
-psql "$DATABASE_URL" -f migrations/001_init.sql
+psql "$DATABASE_URL" -f scripts/database/postgres_init.sql
 ```
 
 ### Run in development (fast, no build)
@@ -212,7 +288,7 @@ node dist/src/server.js
 node dist/src/worker.js
 ```
 
-**Important**: the project uses `moduleResolution: NodeNext` and the build step emits imports with `.js` extensions. Running built files via `node` requires that build step — skipping it can produce runtime errors such as `ERR_MODULE_NOT_FOUND` or extension errors.
+**Important**: the project uses `moduleResolution: NodeNext` and the build step emits imports with `.js` extensions. Running built files via `node` requires that build step - skipping it can produce runtime errors such as `ERR_MODULE_NOT_FOUND` or extension errors.
 
 ---
 
