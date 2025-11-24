@@ -2,6 +2,8 @@
 
 **Devnet proof-of-concept**: an order execution engine that routes SPL-token swaps to the best on-chain venue (Meteora or Raydium), executes the swap on Solana Devnet, persists order history to PostgreSQL, and streams live lifecycle events to clients via WebSocket.
 
+[Try Live](https://solana-order-engine.onrender.com)
+
 ---
 
 ## Table of contents
