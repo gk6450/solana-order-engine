@@ -1,0 +1,64 @@
+{
+  "info": {
+    "name": "Solana Order Engine - Demo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Health + execute endpoint. Set baseUrl variable to your deployed URL (default provided)."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://solana-order-engine.onrender.com" }
+  ],
+  "item": [
+    {
+      "name": "Health - wake instance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+      },
+      "response": []
+    },
+    {
+      "name": "Execute Order (POST /api/orders/execute)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token_in\": \"6n8Bkmfg1szhfLknyPLu3MfK6L8BxvQYdNYX9m9gJsqY\",\n  \"token_out\": \"DZkw6Nm9GagPnnZUoMYo3wD3Cgb7ZNY4eqYWPmn9Hgnn\",\n  \"amount_in\": \"90000\",\n  \"slippage\": 0.5\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/orders/execute", "host": ["{{baseUrl}}"], "path": ["api","orders","execute"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json.orderId) {",
+              "  pm.collectionVariables.set('orderId', json.orderId);",
+              "}",
+              "if (json.wsToken) {",
+              "  pm.collectionVariables.set('wsToken', json.wsToken);",
+              "}",
+              "pm.test('status 200', function() { pm.response.to.have.status(200); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "WS Subscribe (manual step)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/ws?token={{wsToken}}", "host": ["{{baseUrl}}"], "path": ["ws"], "query": [{ "key": "token", "value": "{{wsToken}}" }] }
+      },
+      "response": [],
+      "description": "Postman has a WebSocket tab (or use wscat):\n\nwscat -c \"wss://solana-order-engine.onrender.com/ws?token={{wsToken}}\"\n\nThen you can `send` JSON: { \"action\": \"auth\", \"token\": \"{{wsToken}}\" } or the service may accept the token query param on connect."
+    }
+  ]
+}
