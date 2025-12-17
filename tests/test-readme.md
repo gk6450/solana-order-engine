@@ -10,9 +10,9 @@
 - We use **ioredis-mock** to replace Redis in many tests, and a small **in-memory `bullmq` mock** inside `tests/ws_and_queue.integration.test.ts` to avoid Lua/cmsgpack issues.  
 - Worker processing logic is exercised end-to-end in-process via the mock; DEX logic uses a `USE_MOCK` path so no real Solana transactions are sent during tests.  
 - Tests included in this repo:
-  - `tests/setup.test.ts` — basic sanity checks. fileciteturn2file2  
-  - `tests/dexRouter.test.ts` — routing and executeSwap mock-path unit tests. fileciteturn2file1  
-  - `tests/ws_and_queue.integration.test.ts` — queue + websocket lifecycle integration using an in-memory `bullmq` mock. fileciteturn2file0
+  - `tests/setup.test.ts` — basic sanity checks.  
+  - `tests/dexRouter.test.ts` — routing and executeSwap mock-path unit tests.  
+  - `tests/ws_and_queue.integration.test.ts` — queue + websocket lifecycle integration using an in-memory `bullmq` mock.
 
 ---
 
@@ -100,13 +100,5 @@ npx vitest --list
 - To assert strict outcomes (e.g., always `confirmed`), mock `../src/router/dexRouter.js` to make `executeSwap` always succeed.
 - To test Postgres interactions, replace DB mocks with a test database and remove the DB `vi.mock` lines.
 - For CI, prefer running a real Redis service (Docker) and set `REDIS_URL` in the CI environment.
-
----
-
-## Files of interest (tests)
-
-- `tests/setup.test.ts` — basic sanity. fileciteturn2file2  
-- `tests/dexRouter.test.ts` — router + executeSwap unit tests. fileciteturn2file1  
-- `tests/ws_and_queue.integration.test.ts` — integration test with in-memory `bullmq` mock. fileciteturn2file0
 
 ---
